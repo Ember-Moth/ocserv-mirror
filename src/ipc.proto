@@ -382,6 +382,19 @@ message secm_list_cookies_reply_msg
 	repeated cookie_int_msg cookies = 1;
 }
 
+/* SECM_TERMINATE_SESSION: sent from main to sec-mod to invalidate session cookie */
+message secm_terminate_session_msg
+{
+	optional string username = 1;
+	optional bytes safe_id = 2;
+}
+
+/* SECM_TERMINATE_SESSION_REPLY */
+message secm_terminate_session_reply_msg
+{
+	required bool result = 1 [default = false];
+}
+
 
 /* SECM_BAN_IP: sent from sec-mod to main */
 /* same as: ban_ip_msg */
