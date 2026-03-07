@@ -557,7 +557,7 @@ static int process_packet_from_main(void *pool, int fd, sec_mod_st *sec,
 							 data.data);
 		if (msg == NULL) {
 			seclog(sec, LOG_INFO,
-			       "error unpacking terminate session\n");
+			       "error unpacking terminate session");
 			return ERR_BAD_COMMAND;
 		}
 
@@ -580,7 +580,7 @@ static int process_packet_from_main(void *pool, int fd, sec_mod_st *sec,
 
 		if (ret < 0) {
 			seclog(sec, LOG_ERR,
-			       "could not send terminate session reply!\n");
+			       "could not send terminate session reply!");
 			return ERR_BAD_COMMAND;
 		}
 

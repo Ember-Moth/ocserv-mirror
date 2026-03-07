@@ -142,9 +142,9 @@ fi
 assert_cookie_rejected "${COOKIE_ID}"
 
 # 3) terminate session <sid>
-# Obtain a cookie without opening a full VPN session, then terminate it by SID.
 get_cookie
 COOKIE_SESSION="${COOKIE}"
+connect_with_cookie "${COOKIE_SESSION}"
 
 SID=$(${OCCTL} -s ${OCCTL_SOCKET} --json show sessions valid | jq -r '.[] | select((.Username // "") == "test") | .Session' | head -n 1)
 if test -z "${SID}";then

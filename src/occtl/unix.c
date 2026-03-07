@@ -790,7 +790,7 @@ int handle_terminate_session_cmd(struct unix_ctx *ctx, const char *arg,
 	struct cmd_reply_st raw;
 	BoolMsg *rep;
 	unsigned int status;
-	SessionIdReq req = SESSION_ID_REQ__INIT;
+	UsernameReq req = USERNAME_REQ__INIT;
 
 	PROTOBUF_ALLOCATOR(pa, ctx);
 
@@ -801,11 +801,11 @@ int handle_terminate_session_cmd(struct unix_ctx *ctx, const char *arg,
 
 	init_reply(&raw);
 
-	req.session_id = (void *)arg;
+	req.username = (void *)arg;
 
 	ret = send_cmd(ctx, CTL_CMD_TERMINATE_SESSION, &req,
-		       (pack_size_func)session_id_req__get_packed_size,
-		       (pack_func)session_id_req__pack, &raw);
+		       (pack_size_func)username_req__get_packed_size,
+		       (pack_func)username_req__pack, &raw);
 	if (ret < 0) {
 		goto error;
 	}

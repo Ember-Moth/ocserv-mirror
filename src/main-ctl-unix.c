@@ -988,7 +988,8 @@ static void method_terminate_id(method_ctx *ctx, int cfd, uint8_t *msg,
 	struct proc_st *cpos;
 	struct proc_st *ctmp = NULL;
 	int ret;
-	const char *username = NULL;
+	char safe_id[SAFE_ID_SIZE];
+	int found = 0;
 
 	mslog(ctx->s, NULL, LOG_DEBUG, "ctl: terminate id");
 
@@ -999,11 +1000,13 @@ static void method_terminate_id(method_ctx *ctx, int cfd, uint8_t *msg,
 		return;
 	}
 
-	/* Find and disconnect the process, save username for cookie invalidation */
+	/* Find and disconnect the process, save sid for cookie invalidation */
 	list_for_each_safe(&ctx->s->proc_list.head, ctmp, cpos, list)
 	{
 		if (ctmp->pid == req->id) {
-			username = ctmp->username;
+			calc_safe_id(ctmp->sid, sizeof(ctmp->sid), safe_id,
+				     SAFE_ID_SIZE);
+			found = 1;
 			disconnect_proc(ctx->s, ctmp);
 			rep.status = 1;
 
@@ -1012,12 +1015,12 @@ static void method_terminate_id(method_ctx *ctx, int cfd, uint8_t *msg,
 		}
 	}
 
-	/* Invalidate session cookies for the user */
-	if (username != NULL) {
-		if (terminate_session_in_secmod(ctx, username, NULL, 0)) {
+	/* Invalidate session cookie for the specific connection */
+	if (found) {
+		if (terminate_session_in_secmod(ctx, NULL, safe_id,
+						SAFE_ID_SIZE)) {
 			mslog(ctx->s, NULL, LOG_INFO,
-			      "terminated session cookies for user '%s' (ID %d)",
-			      username, req->id);
+			      "terminated session cookie for ID %d", req->id);
 		}
 	}
 
@@ -1034,13 +1037,13 @@ static void method_terminate_id(method_ctx *ctx, int cfd, uint8_t *msg,
 static void method_terminate_session(method_ctx *ctx, int cfd, uint8_t *msg,
 				     unsigned int msg_size)
 {
-	SessionIdReq *req;
+	UsernameReq *req;
 	BoolMsg rep = BOOL_MSG__INIT;
 	int ret;
 
 	mslog(ctx->s, NULL, LOG_DEBUG, "ctl: terminate session");
 
-	req = session_id_req__unpack(NULL, msg_size, msg);
+	req = username_req__unpack(NULL, msg_size, msg);
 	if (req == NULL) {
 		mslog(ctx->s, NULL, LOG_ERR,
 		      "error parsing terminate session request");
@@ -1048,14 +1051,14 @@ static void method_terminate_session(method_ctx *ctx, int cfd, uint8_t *msg,
 	}
 
 	/* Invalidate session cookie by session ID */
-	if (terminate_session_in_secmod(ctx, NULL, req->session_id,
-					strlen(req->session_id))) {
+	if (terminate_session_in_secmod(ctx, NULL, req->username,
+					strlen(req->username))) {
 		mslog(ctx->s, NULL, LOG_INFO,
-		      "terminated session with ID '%.6s'", req->session_id);
+		      "terminated session with ID '%.6s'", req->username);
 		rep.status = 1;
 	}
 
-	session_id_req__free_unpacked(req, NULL);
+	username_req__free_unpacked(req, NULL);
 
 	ret = send_msg(ctx->pool, cfd, CTL_CMD_TERMINATE_SESSION_REP, &rep,
 		       (pack_size_func)bool_msg__get_packed_size,

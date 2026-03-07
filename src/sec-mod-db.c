@@ -271,9 +271,6 @@ int terminate_user_sessions(sec_mod_st *sec, const char *username)
 			htable_delval(db, &iter);
 			clean_entry(sec, t);
 			terminated = 1;
-			/* Restart iteration after deletion */
-			t = htable_first(db, &iter);
-			continue;
 		}
 		t = htable_next(db, &iter);
 	}
