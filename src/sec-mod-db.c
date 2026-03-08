@@ -303,7 +303,7 @@ int terminate_session_by_sid(sec_mod_st *sec, const char *safe_id,
 
 	t = htable_first(db, &iter);
 	while (t != NULL) {
-		if (strncmp(t->acct_info.safe_id, safe_id, safe_id_len) == 0) {
+		if (memcmp(t->acct_info.safe_id, safe_id, safe_id_len) == 0) {
 			seclog(sec, LOG_INFO,
 			       "force terminating session of user '%s' " SESSION_STR,
 			       t->acct_info.username, t->acct_info.safe_id);
