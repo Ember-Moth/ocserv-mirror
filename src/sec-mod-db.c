@@ -298,6 +298,13 @@ int terminate_session_by_sid(sec_mod_st *sec, const char *safe_id,
 		return 0;
 	}
 
+	if (safe_id_len != SAFE_ID_SIZE - 1) {
+		seclog(sec, LOG_INFO,
+		       "terminate session request with invalid session ID length (%zu)",
+		       safe_id_len);
+		return 0;
+	}
+
 	seclog(sec, LOG_DEBUG, "terminating session with ID prefix '%.6s'",
 	       safe_id);
 

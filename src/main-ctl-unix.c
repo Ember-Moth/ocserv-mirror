@@ -1052,9 +1052,7 @@ static void method_terminate_id(method_ctx *ctx, int cfd, uint8_t *msg,
 			found = 1;
 			disconnect_proc(ctx->s, ctmp);
 			rep.status = 1;
-
-			if (req->id != -1)
-				break;
+			break;
 		}
 	}
 
