@@ -78,6 +78,9 @@ static uint8_t msg_map[] = {
 	[CTL_CMD_DISCONNECT_NAME] = CTL_CMD_DISCONNECT_NAME_REP,
 	[CTL_CMD_DISCONNECT_ID] = CTL_CMD_DISCONNECT_ID_REP,
 	[CTL_CMD_UNBAN_IP] = CTL_CMD_UNBAN_IP_REP,
+	[CTL_CMD_TERMINATE_USER] = CTL_CMD_TERMINATE_USER_REP,
+	[CTL_CMD_TERMINATE_ID] = CTL_CMD_TERMINATE_ID_REP,
+	[CTL_CMD_TERMINATE_SESSION] = CTL_CMD_TERMINATE_SESSION_REP,
 };
 
 struct cmd_reply_st {
@@ -655,6 +658,171 @@ int handle_disconnect_id_cmd(struct unix_ctx *ctx, const char *arg,
 		ret = 0;
 	} else {
 		printf("could not disconnect ID '%s'\n", arg);
+		ret = 1;
+	}
+
+	goto cleanup;
+
+error:
+	fprintf(stderr, ERR_SERVER_UNREACHABLE);
+	ret = 1;
+cleanup:
+	free_reply(&raw);
+
+	return ret;
+}
+
+int handle_terminate_user_cmd(struct unix_ctx *ctx, const char *arg,
+			      cmd_params_st *params)
+{
+	int ret;
+	struct cmd_reply_st raw;
+	BoolMsg *rep;
+	unsigned int status;
+	UsernameReq req = USERNAME_REQ__INIT;
+
+	PROTOBUF_ALLOCATOR(pa, ctx);
+
+	if (arg == NULL || need_help(arg)) {
+		check_cmd_help(rl_line_buffer);
+		return 1;
+	}
+
+	init_reply(&raw);
+
+	req.username = (void *)arg;
+
+	ret = send_cmd(ctx, CTL_CMD_TERMINATE_USER, &req,
+		       (pack_size_func)username_req__get_packed_size,
+		       (pack_func)username_req__pack, &raw);
+	if (ret < 0) {
+		goto error;
+	}
+
+	rep = bool_msg__unpack(&pa, raw.data_size, raw.data);
+	if (rep == NULL)
+		goto error;
+
+	status = rep->status;
+	bool_msg__free_unpacked(rep, &pa);
+
+	if (status != 0) {
+		printf("user '%s' was terminated (session invalidated)\n", arg);
+		ret = 0;
+	} else {
+		printf("could not terminate user '%s'\n", arg);
+		ret = 1;
+	}
+
+	goto cleanup;
+
+error:
+	fprintf(stderr, ERR_SERVER_UNREACHABLE);
+	ret = 1;
+cleanup:
+	free_reply(&raw);
+
+	return ret;
+}
+
+int handle_terminate_id_cmd(struct unix_ctx *ctx, const char *arg,
+			    cmd_params_st *params)
+{
+	int ret;
+	struct cmd_reply_st raw;
+	BoolMsg *rep;
+	unsigned int status;
+	unsigned int id;
+	IdReq req = ID_REQ__INIT;
+
+	PROTOBUF_ALLOCATOR(pa, ctx);
+
+	if (arg != NULL)
+		id = atoi(arg);
+
+	if (arg == NULL || need_help(arg) || id == 0) {
+		check_cmd_help(rl_line_buffer);
+		return 1;
+	}
+
+	init_reply(&raw);
+
+	req.id = id;
+
+	ret = send_cmd(ctx, CTL_CMD_TERMINATE_ID, &req,
+		       (pack_size_func)id_req__get_packed_size,
+		       (pack_func)id_req__pack, &raw);
+	if (ret < 0) {
+		goto error;
+	}
+
+	rep = bool_msg__unpack(&pa, raw.data_size, raw.data);
+	if (rep == NULL)
+		goto error;
+
+	status = rep->status;
+	bool_msg__free_unpacked(rep, &pa);
+
+	if (status != 0) {
+		printf("connection ID '%s' was terminated (session invalidated)\n",
+		       arg);
+		ret = 0;
+	} else {
+		printf("could not terminate ID '%s'\n", arg);
+		ret = 1;
+	}
+
+	goto cleanup;
+
+error:
+	fprintf(stderr, ERR_SERVER_UNREACHABLE);
+	ret = 1;
+cleanup:
+	free_reply(&raw);
+
+	return ret;
+}
+
+int handle_terminate_session_cmd(struct unix_ctx *ctx, const char *arg,
+				 cmd_params_st *params)
+{
+	int ret;
+	struct cmd_reply_st raw;
+	BoolMsg *rep;
+	unsigned int status;
+	SafeIdReq req = SAFE_ID_REQ__INIT;
+
+	PROTOBUF_ALLOCATOR(pa, ctx);
+
+	if (arg == NULL || need_help(arg)) {
+		check_cmd_help(rl_line_buffer);
+		return 1;
+	}
+
+	init_reply(&raw);
+
+	req.safe_id.data = (uint8_t *)arg;
+	req.safe_id.len = strlen(arg);
+
+	ret = send_cmd(ctx, CTL_CMD_TERMINATE_SESSION, &req,
+		       (pack_size_func)safe_id_req__get_packed_size,
+		       (pack_func)safe_id_req__pack, &raw);
+	if (ret < 0) {
+		goto error;
+	}
+
+	rep = bool_msg__unpack(&pa, raw.data_size, raw.data);
+	if (rep == NULL)
+		goto error;
+
+	status = rep->status;
+	bool_msg__free_unpacked(rep, &pa);
+
+	if (status != 0) {
+		printf("session '%.6s' was terminated\n", arg);
+		ret = 0;
+	} else {
+		printf("could not terminate session '%.6s'\n", arg);
 		ret = 1;
 	}
 
