@@ -1,5 +1,8 @@
 * Version 1.4.2 (unreleased)
 - The bundled llhttp was updated to 9.3.1.
+- No longer need to duplicate global options in virtual hosts (#698)
+- Added VIRTUAL HOSTS section to ocserv(8) man page; documented global options
+  that cannot be overridden at vhost level
 
 
 * Version 1.4.1 (released 2026-02-28)
