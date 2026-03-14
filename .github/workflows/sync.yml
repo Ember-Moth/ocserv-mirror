@@ -2,8 +2,8 @@ name: Sync Upstream to Master
 
 on:
   schedule:
-    - cron: '0 0 * * *' # 每天同步一次
-  workflow_dispatch:   # 允许手动触发
+    - cron: '0 0 * * *' 
+  workflow_dispatch:   
 
 jobs:
   sync_to_master:
@@ -11,17 +11,18 @@ jobs:
     steps:
       - name: Sync GitLab to GitHub Master
         run: |
-          # 1. 以裸仓库模式克隆上游
-          git clone --mirror https://gitlab.com/openconnect/ocserv.git ocserv_mirror
-          cd ocserv_mirror
+          # 1. 正常克隆 GitLab 的 master 分支（不使用 --mirror）
+          # --single-branch 确保只拉取 master，提高速度
+          git clone --single-branch --branch master https://gitlab.com/openconnect/ocserv.git ocserv_source
+          cd ocserv_source
           
-          # 2. 设置目标仓库地址（使用你配置好的 Secret）
-          git remote set-url --push origin https://${{ github.actor }}:${{ secrets.SYNC_PAT }}@github.com/${{ github.repository }}.git
+          # 2. 设置 GitHub 远程地址（使用你配置好的 SYNC_PAT）
+          git remote add github https://${{ github.actor }}:${{ secrets.SYNC_PAT }}@github.com/${{ github.repository }}.git
           
-          # 3. 核心步骤：显式推送
-          # 格式为 <本地分支>:<远程分支>
-          # 这会将上游的 master 推送到 GitHub 的 master，完全不影响 main
-          git push origin master:master --force
+          # 3. 将本地的 master 分支推送到 GitHub 的 master 分支
+          # 这样会创建/更新 master，但绝对不会影响你当前的 main 分支
+          git push github master --force
           
-          # 4. 同步所有版本标签（VPN 开发必备）
-          git push origin --tags --force
+          # 4. 获取所有标签并同步
+          git fetch --tags https://gitlab.com/openconnect/ocserv.git
+          git push github --tags --force
