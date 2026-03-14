@@ -1,22 +1,27 @@
-name: Sync Upstream Mirror
+name: Sync Upstream to Master
 
 on:
   schedule:
-    - cron: '0 0 * * *' # 每天 UTC 0 点自动执行
-  workflow_dispatch:   # 允许手动点击运行
+    - cron: '0 0 * * *' # 每天同步一次
+  workflow_dispatch:   # 允许手动触发
 
 jobs:
-  mirror_sync:
+  sync_to_master:
     runs-on: ubuntu-latest
     steps:
-      - name: Sync GitLab to GitHub
+      - name: Sync GitLab to GitHub Master
         run: |
+          # 1. 以裸仓库模式克隆上游
           git clone --mirror https://gitlab.com/openconnect/ocserv.git ocserv_mirror
           cd ocserv_mirror
           
-          # 移除对 github.repository 的直接依赖，确保 URL 正确
-          git remote set-url --push origin https://${{ secrets.SYNC_PAT }}@github.com/${{ github.repository }}.git
+          # 2. 设置目标仓库地址（使用你配置好的 Secret）
+          git remote set-url --push origin https://${{ github.actor }}:${{ secrets.SYNC_PAT }}@github.com/${{ github.repository }}.git
           
-          # 强制推送所有分支和标签，但不使用 --mirror（避免删除 GitHub 独有的分支）
-          git push origin --all --force
+          # 3. 核心步骤：显式推送
+          # 格式为 <本地分支>:<远程分支>
+          # 这会将上游的 master 推送到 GitHub 的 master，完全不影响 main
+          git push origin master:master --force
+          
+          # 4. 同步所有版本标签（VPN 开发必备）
           git push origin --tags --force
