@@ -1,0 +1,23 @@
+name: Sync Upstream Mirror
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # 每天 UTC 0 点自动执行
+  workflow_dispatch:   # 允许手动点击运行
+
+jobs:
+  mirror_sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync GitLab to GitHub
+        run: |
+          # 1. 以镜像模式克隆 GitLab 仓库（包含所有分支、标签和提交历史）
+          git clone --mirror https://gitlab.com/openconnect/ocserv.git ocserv_mirror
+          cd ocserv_mirror
+
+          # 2. 设置远程目标为你的 GitHub 仓库
+          # 使用 ${{ secrets.SYNC_PAT }} 确保有推送权限
+          git remote set-url --push origin https://${{ github.actor }}:${{ secrets.SYNC_PAT }}@github.com/${{ github.repository }}.git
+
+          # 3. 强制镜像推送（覆盖 GitHub 仓库的所有内容，保持与 GitLab 完全一致）
+          git push --mirror origin
